@@ -1,5 +1,8 @@
-import { motion, useMotionValue, useTransform } from "framer-motion";
+import { motion, useMotionValue, useTransform, useDragControls, animate } from "framer-motion";
+import { Card, CardBody } from "./ui/Card";
+import Button from "./ui/Button";
 import type { FeedItem } from "../types/api";
+import { useCallback } from "react";
 
 type Props = {
   user: FeedItem;
@@ -7,35 +10,87 @@ type Props = {
   onRight: (userId: string) => void;
 };
 
+const SWIPE_THRESHOLD = 150;
+
 export default function FeedCard({ user, onLeft, onRight }: Props) {
   const x = useMotionValue(0);
-  const rotate = useTransform(x, [-200, 200], [-12, 12]);
-  const opacity = useTransform(x, [-200, 0, 200], [0.3, 1, 0.3]);
+  const rotate = useTransform(x, [-220, 220], [-10, 10]);
+  const opacity = useTransform(x, [-220, 0, 220], [0.4, 1, 0.4]);
+  const controls = useDragControls();
+
+  const completeSwipe = useCallback(
+    async (dir: "left" | "right") => {
+      const toX = dir === "right" ? 500 : -500;
+      await animate(x, toX, { type: "spring", stiffness: 300, damping: 30 });
+      dir === "right" ? onRight(user.id) : onLeft(user.id);
+      x.set(0); // reset for next mount (if you recycle this component)
+    },
+    [onLeft, onRight, user.id, x]
+  );
 
   return (
     <motion.div
       style={{ x, rotate, opacity }}
       drag="x"
+      dragControls={controls}
+      dragListener={false}               // we start drag manually from the image
       dragConstraints={{ left: 0, right: 0 }}
-      dragElastic={0.8}
+      dragElastic={0.85}
       onDragEnd={(_, info) => {
-        if (info.offset.x > 140) onRight(user.id);
-        else if (info.offset.x < -140) onLeft(user.id);
+        if (info.offset.x > SWIPE_THRESHOLD) completeSwipe("right");
+        else if (info.offset.x < -SWIPE_THRESHOLD) completeSwipe("left");
+        else animate(x, 0, { type: "spring", stiffness: 300, damping: 30 });
       }}
-      className="w-full max-w-md bg-zinc-900 border border-white/10 rounded-2xl p-4 shadow-xl select-none"
+      className="mx-auto"
     >
-      <div className="flex items-center gap-4">
-        {user.avatar ? <img src={user.avatar} alt={user.name} className="h-14 w-14 rounded-full object-cover" /> : <div className="h-14 w-14 rounded-full bg-zinc-800" />}
-        <div className="flex-1">
-          <div className="text-white font-semibold">{user.name}</div>
-          <div className="text-white/60 text-sm">{user.title}</div>
+      <Card className="w-80 sm:w-96 rounded-2xl overflow-hidden shadow-xl border border-white/10 bg-surface-200 flex flex-col">
+        {/* Image (drag handle) */}
+        <div
+          className="relative h-72 w-full cursor-grab active:cursor-grabbing select-none"
+          onPointerDown={(e) => {
+            // start dragging the parent when grabbing the image
+            controls.start(e);
+          }}
+        >
+          {user.avatar ? (
+            <img
+              src={user.avatar}
+              alt={user.name}
+              className="absolute inset-0 h-full w-full object-cover"
+              draggable={false}
+            />
+          ) : (
+            <div className="absolute inset-0 h-full w-full bg-surface-300" />
+          )}
+          {/* Optional soft gradient for polish */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/40 to-transparent" />
         </div>
-      </div>
-      <div className="mt-3 text-white/80 text-sm line-clamp-3">{user.bio}</div>
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        <button onClick={() => onLeft(user.id)} className="rounded-xl border border-white/15 bg-zinc-800 py-2 text-white/90 hover:text-white">Skip</button>
-        <button onClick={() => onRight(user.id)} className="rounded-xl bg-[#a4f839] text-black font-semibold py-2">Connect</button>
-      </div>
+
+        {/* Info */}
+        <CardBody className="p-5 flex flex-col gap-3">
+          <div>
+            <div className="text-xl font-semibold">{user.name}</div>
+            <div className="text-white/60 text-sm">{user.title || "Developer"}</div>
+          </div>
+          <p className="text-white/80 text-sm leading-snug line-clamp-3">{user.bio}</p>
+
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <Button
+              variant="ghost"
+              onClick={() => completeSwipe("left")}
+              aria-label="Skip"
+            >
+              Skip
+            </Button>
+            <Button
+              onClick={() => completeSwipe("right")}
+              aria-label="Connect"
+            >
+              Connect
+            </Button>
+          </div>
+        </CardBody>
+      </Card>
     </motion.div>
   );
 }

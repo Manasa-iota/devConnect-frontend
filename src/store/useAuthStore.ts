@@ -9,6 +9,7 @@ type AuthState = {
 };
 
 type AuthActions = {
+  setUser: (user: User | null) => void;
   refresh: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -29,6 +30,8 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
       set({ ready: true });
     }
   },
+  
+  setUser: (user) => set({ user }),
   login: async (email, password) => {
     const res = await api<{ success: true; user: User }>("/auth/login", { method: "POST", body: { email, password } });
     set({ user: res.user, error: null });

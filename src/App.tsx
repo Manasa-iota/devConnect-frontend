@@ -9,6 +9,7 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import { useAuthStore } from "./store/useAuthStore";
 import { useEffect } from "react";
 import Signup from "./components/Signup";
+import Messages from "./pages/Messages";
 
 export default function App() {
   const refresh = useAuthStore((s) => s.refresh);
@@ -24,6 +25,11 @@ export default function App() {
           <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="login" element={<Login />} />
           <Route path="signup" element={<Signup />} />
+          <Route path="messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+          <Route
+            path="messages/:peerId"
+            element={<ProtectedRoute><Messages /></ProtectedRoute>}
+          />
         </Route>
       </Routes>
     </BrowserRouter>

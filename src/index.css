@@ -1,1 +1,14 @@
 @import "tailwindcss";
+:root {
+  --bg: radial-gradient(1200px 800px at 10% -10%, rgba(164,248,57,.12), transparent 35%), radial-gradient(1000px 600px at 90% 10%, rgba(164,248,57,.08), transparent 40%), #0b0b0c;
+}
+html,body,#root { height:100%; }
+body { background: var(--bg); }
+/* Hide scrollbar but keep scrolling */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE, Edge */
+  scrollbar-width: none; /* Firefox */
+}
